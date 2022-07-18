@@ -132,5 +132,206 @@ my_hash["name"] # => user
 # For situations where keys are expected or required to exist, hashes have a fetch method which will raise an
 # exception when accessing a key that does not exist:
 
+my_hash = {}
+my_hash.fetch(:age) #=> KeyError: key not found: :age
+
+# fetch accepts a default value as its second argument, 
+# which is returned if the key has not been previously set:
+
+my_hash = {}
+my_hash.fetch(:age, 45) #=> => 45
+
+# fetch can also accept a block which is returned if the key has not been previously set:
+
+my_hash = {}
+my_hash.fetch(:age) { 21 } #=> 21
+my_hash.fetch(:age) do |k|
+ puts "Could not find #{k}"
+end
+#=> Could not find age
 
 
+# Hashes also support a store method as an alias for []=:
+my_hash = {}
+my_hash.store(:age, 45)
+my_hash #=> { :age => 45 }
+
+# You can also get all values of a hash using the values method:
+my_hash = { length: 4, width: 5 }
+my_hash.values #=> [4, 5]
+
+# Note: This is only for Ruby 2.3+ #dig is handy for nested Hashs. Extracts the nested value specified by the
+# sequence of idx objects by calling dig at each step, returning nil if any intermediate step is nil.
+h = { foo: {bar: {baz: 1}}}
+h.dig(:foo, :bar, :baz) # => 1
+
+h.dig(:foo, :zot, :xyz) # => nil
+
+g = { foo: [10, 11, 12] }
+
+g.dig(:foo, 1) # => 11
+
+# 4: Automatically creating a Deep Hash
+# Hash has a default value for keys that are requested but don't exist (nil):
+a = {}
+p a[ :b ] # => nil
+
+# When creating a new Hash, one can specify the default:
+b = Hash.new 'puppy'
+p b[ :b ] # => 'puppy'
+
+# Hash.new also takes a block, which allows you to automatically create nested hashes, such as Perl's autovivification
+# behavior or mkdir -p:
+# h is the hash you're creating, and k the key.
+#
+hash = Hash.new { |h, k| h[k] = Hash.new &h.default_proc }
+hash[ :a ][ :b ][ :c ] = 3
+p hash # => { a: { b: { c: 3 } } }
+
+# 5: Iterating Over a Hash
+# A Hash includes the Enumerable module, which provides several iteration methods, such as: Enumerable#each,
+# Enumerable#each_pair, Enumerable#each_key, and Enumerable#each_value.
+
+# .each and .each_pair iterate over each key-value pair:
+h = { "first_name" => "John", "last_name" => "Doe" }
+h.each do |key, value|
+ puts "#{key} = #{value}"
+end
+# => first_name = John
+# last_name = Doe
+
+# .each_key iterates over the keys only:
+h = { "first_name" => "John", "last_name" => "Doe" }
+h.each_key do |key|
+ puts key
+end
+# => first_name
+# last_name
+
+# .each_value iterates over the values only:
+h = { "first_name" => "John", "last_name" => "Doe" }
+h.each_value do |value|
+ puts value
+end
+# => John
+# Doe
+
+# .each_with_index iterates over the elements and provides the index of the iteration:
+h = { "first_name" => "John", "last_name" => "Doe" }
+h.each_with_index do |(key, value), index|
+ puts "index: #{index} | key: #{key} | value: #{value}"
+end
+# => index: 0 | key: first_name | value: John
+# index: 1 | key: last_name | value: Doe
+
+# 6: Filtering hashes
+# SELECT returns a new hash with key-value pairs for which the block evaluates to true.
+{ :a => 1, :b => 2, :c => 3 }.select { |k, v| k != :a && v.even? } # => { :b => 2 }
+
+# When you will not need the key or value in a filter block, the convention is to use an _ in that place:
+{ :a => 1, :b => 2, :c => 3 }.select { |_, v| v.even? } # => { :b => 2 }
+{ :a => 1, :b => 2, :c => 3 }.select { |k, _| k == :c } # => { :c => 3 }
+
+# reject returns a new hash with key-value pairs for which the block evaluates to false:
+{ :a => 1, :b => 2, :c => 3 }.reject { |_, v| v.even? } # => { :a => 1, :c => 3 }
+{ :a => 1, :b => 2, :c => 3 }.reject { |k, _| k == :b } # => { :a => 1, :c => 3 }
+
+# 7: Conversion to and from Arrays
+# Hashes can be freely converted to and from arrays. Converting a hash of key/value pairs into an array will produce
+# an array containing nested arrays for pair:
+{ :a => 1, :b => 2 }.to_a # => [[:a, 1], [:b, 2]]
+
+# In the opposite direction a Hash can be created from an array of the same format:
+[[:x, 3], [:y, 4]].to_h # => { :x => 3, :y => 4 }
+
+# Similarly, Hashes can be initialized using Hash[] and a list of alternating keys and values:
+Hash[:a, 1, :b, 2] # => { :a => 1, :b => 2 }
+
+# Or from an array of arrays with two values each:
+Hash[ [[:x, 3], [:y, 4]] ] # => { :x => 3, :y => 4 }
+
+# Hashes can be converted back to an Array of alternating keys and values using flatten():
+{ :a => 1, :b => 2 }.flatten # => [:a, 1, :b, 2]
+
+# The easy conversion to and from an array allows Hash to work well with many Enumerable methods such as collect
+# and zip:
+Hash[('a'..'z').collect{ |c| [c, c.upcase] }] # => { 'a' => 'A', 'b' => 'B', ... }
+people = ['Alice', 'Bob', 'Eve']
+height = [5.7, 6.0, 4.9]
+Hash[people.zip(height)] # => { 'Alice' => 5.7, 'Bob' => '6.0', 'Eve' => 4.9 }
+
+# 8: Overriding hash function
+# Ruby hashes use the methods hash and eql? to perform the hash operation and assign objects stored in the hash
+# to internal hash bins. The default implementation of hash in Ruby is the murmur hash function over all member
+# fields of the hashed object. To override this behavior it is possible to override hash and eql? methods
+
+# As with other hash implementations, two objects a and b, will be hashed to the same bucket if a.hash == b.hash
+# and will be deemed identical if a.eql?(b). Thus, when reimplementing hash and eql? one should take care to
+# ensure that if a and b are equal under eql? they must return the same hash value. Otherwise this might result in
+# duplicate entries in a hash. 
+# Conversely, a poor choice in hash implementation might lead many objects to share the
+# same hash bucket, effectively destroying the O(1) look-up time and causing O(n) for calling eql? on all objects.
+# In the example below only the instance of class A is stored as a key, as it was added first:
+class A
+ def initialize(hash_value)
+ @hash_value = hash_value
+ end
+ def hash
+ @hash_value # Return the value given externally
+ end
+ def eql?(b)
+ self.hash == b.hash
+ end
+end
+class B < A
+end
+a = A.new(1)
+b = B.new(1)
+h = {}
+h[a] = 1
+h[b] = 2
+raise "error" unless h.size == 1
+raise "error" unless h.include? b
+raise "error" unless h.include? a
+
+# 9: Getting all keys or values of hash
+{foo: 'bar', biz: 'baz'}.keys # => [:foo, :biz]
+{foo: 'bar', biz: 'baz'}.values # => ["bar", "baz"]
+{foo: 'bar', biz: 'baz'}.to_a # => [[:foo, "bar"], [:biz, "baz"]]
+{foo: 'bar', biz: 'baz'}.each #<Enumerator: {:foo=>"bar", :biz=>"baz"}:each>
+
+# 10: Modifying keys and values
+# You can create a new hash with the keys or values modified, indeed you can also add or delete keys, using inject
+# (AKA, reduce). For example to produce a hash with stringified keys and upper case values:
+fruit = { name: 'apple', color: 'green', shape: 'round' }
+# => {:name=>"apple", :color=>"green", :shape=>"round"}
+
+new_fruit = fruit.inject({}) { |memo, (k,v)| memo[k.to_s] = v.upcase; memo }
+# => new_fruit is {"name"=>"APPLE", "color"=>"GREEN", "shape"=>"ROUND"}
+
+# Hash is an enumerable, in essence a collection of key/value pairs. Therefore is has methods such as each, map and inject.
+# For every key/value pair in the hash the given block is evaluated, the value of memo on the first run is the seed
+# value passed to inject, in our case an empty hash, {}. The value of memo for subsequent evaluations is the
+# returned value of the previous blocks evaluation, this is why we modify memo by setting a key with a value and then
+# return memo at the end. The return value of the final blocks evaluation is the return value of inject, in our case memo.
+# To avoid the having to provide the final value, you could use each_with_object instead:
+
+new_fruit = fruit.each_with_object({}) { |(k,v), memo| memo[k.to_s] = v.upcase }
+Or even map:
+Version ≥ 1.8
+new_fruit = Hash[fruit.map{ |k,v| [k.to_s, v.upcase] }]
+
+# Section 19.11: Set Operations on Hashes
+# Intersection of Hashes
+# To get the intersection of two hashes, return the shared keys the values of which are equal:
+hash1 = { :a => 1, :b => 2 }
+hash2 = { :b => 2, :c => 3 }
+hash1.select { |k, v| (hash2.include?(k) && hash2[k] == v) } # => { :b => 2 }
+
+# Union (merge) of hashes:
+# keys in a hash are unique, if a key occurs in both hashes which are to be merged, the one from the hash that
+# merge is called on is overwritten:
+hash1 = { :a => 1, :b => 2 }
+hash2 = { :b => 4, :c => 3 }
+hash1.merge(hash2) # => { :a => 1, :b => 4, :c => 3 }
+hash2.merge(hash1) # => { :b => 2, :c => 3, :a => 1 }
